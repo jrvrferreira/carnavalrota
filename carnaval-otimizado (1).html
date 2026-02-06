@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Carnaval Rio 2026 — Rota Inteligente + Alertas</title>
+  <meta name="description" content="Monte sua rota inteligente de blocos por distância e horário e acompanhe alertas (mudanças, atrasos, lotação) no Carnaval do Rio 2026." />
+  <style>
+    :root {
+      /* Paleta de cores suaves do Carnaval */
+      --bg-primary: #faf9f7;
+      --bg-secondary: #ffffff;
+      --text-primary: #2d2d2d;
+      --text-secondary: #6b6b6b;
+      --text-muted: #9a9a9a;
+      
+      /* Cores do Carnaval - versão suave */
+      --carnival-pink: #ff6b9d;
+      --carnival-yellow: #ffc845;
+      --carnival-purple: #9b7dd4;
+      --carnival-blue: #64b5f6;
+      --carnival-green: #66d9a9;
+      --carnival-orange: #ff9a76;
+      
+      /* UI Elements */
+      --border-color: #e8e8e8;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Confetes decorativos suaves */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: 
+        radial-gradient(circle at 15% 25%, var(--carnival-pink) 0 3px, transparent 4px),
+        radial-gradient(circle at 85% 15%, var(--carnival-yellow) 0 3px, transparent 4px),
+        radial-gradient(circle at 25% 80%, var(--carnival-purple) 0 3px, transparent 4px),
+        radial-gradient(circle at 75% 70%, var(--carnival-blue) 0 3px, transparent 4px),
+        radial-gradient(circle at 50% 40%, var(--carnival-green) 0 3px, transparent 4px);
+      background-size: 300px 300px;
+      opacity: 0.08;
+      z-index: 0;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, 
+        rgba(255, 107, 157, 0.15), 
+        rgba(255, 200, 69, 0.15), 
+        rgba(155, 125, 212, 0.15));
+      border: 1px solid rgba(155, 125, 212, 0.2);
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--carnival-purple);
+      width: fit-content;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .crown {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--carnival-yellow), var(--carnival-orange));
+      font-size: 1.5rem;
+      box-shadow: var(--shadow-md);
+    }
+
+    h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--carnival-pink), var(--carnival-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    /* Panel de controles */
+    .panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-md);
+    }
+
+    .panel-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* Form elements */
+    input, select, button, textarea {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--carnival-purple);
+      box-shadow: 0 0 0 3px rgba(155, 125, 212, 0.1);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      background: linear-gradient(135deg, var(--carnival-pink), var(--carnival-purple));
+      color: white;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    button.secondary:hover {
+      background: var(--bg-primary);
+    }
+
+    /* Main content */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+      padding: 0.5rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab {
+      flex: 1;
+      min-width: 150px;
+      padding: 0.875rem 1.5rem;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-primary);
+    }
+
+    .tab.active {
+      color: white;
+      background: linear-gradient(135deg, var(--carnival-pink), var(--carnival-purple));
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Content section */
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .count-badge {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, 
+        rgba(255, 107, 157, 0.1), 
+        rgba(155, 125, 212, 0.1));
+      border: 1px solid var(--carnival-purple);
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--carnival-purple);
+    }
+
+    /* Pills */
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pill {
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .pill.ok {
+      background: rgba(102, 217, 169, 0.1);
+      border-color: var(--carnival-green);
+      color: #2d6b50;
+    }
+
+    .pill.warn {
+      background: rgba(255, 200, 69, 0.1);
+      border-color: var(--carnival-yellow);
+      color: #8a6200;
+    }
+
+    .pill.danger {
+      background: rgba(255, 107, 157, 0.1);
+      border-color: var(--carnival-pink);
+      color: #b3234a;
+    }
+
+    /* Events list */
+    .events-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .event-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 1.5rem;
+    }
+
+    .event-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--carnival-purple);
+      transform: translateY(-2px);
+    }
+
+    .event-info {
+      flex: 1;
+    }
+
+    .event-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .event-address {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .meta-item {
+      padding: 0.375rem 0.75rem;
+      background: var(--bg-primary);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .event-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 150px;
+    }
+
+    .btn-sm {
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    /* Grid layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Route panel */
+    .route-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    /* Kicker (info box) */
+    .kicker {
+      padding: 1rem;
+      background: rgba(100, 181, 246, 0.08);
+      border-left: 3px solid var(--carnival-blue);
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      margin-top: 1rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        padding: 1rem 1.5rem;
+      }
+
+      main {
+        padding: 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+      }
+
+      .event-card {
+        flex-direction: column;
+      }
+
+      .event-actions {
+        width: 100%;
+        flex-direction: row;
+      }
+
+      .tabs {
+        padding: 0.25rem;
+      }
+
+      .tab {
+        min-width: auto;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-content {
+        padding: 1rem;
+      }
+
+      main {
+        padding: 1rem;
+      }
+
+      .crown {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+      }
+
+      .event-actions {
+        flex-direction: column;
+      }
+
+      .route-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Utilities */
+    .text-muted {
+      color: var(--text-muted);
+    }
+
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .mb-3 { margin-bottom: 1.5rem; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .mt-3 { margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="hero">
+      <div class="hero-left">
+        <div class="badge">
+          🎭 Carnaval Rio 2026
+        </div>
+        <div class="brand">
+          <div class="crown">👑</div>
+          <div>
+            <h1>Rota Inteligente + Alertas</h1>
+            <p class="subtitle">Monte sua rota por distância e horário. Acompanhe alertas ao vivo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">⚙️ Filtros</div>
+        <div class="controls">
+          <input type="text" id="search" placeholder="🔍 Buscar blocos..." />
+          <select id="dayFilter">
+            <option value="">Todos os dias</option>
+          </select>
+          <select id="tagFilter">
+            <option value="">Todas categorias</option>
+            <option value="pre">Pré-Carnaval</option>
+            <option value="official">Dias Oficiais</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" id="tabAgenda"><span>📅 Agenda</span></button>
+    <button class="tab" id="tabMinhaRota"><span>🗺️ Minha Rota</span></button>
+    <button class="tab" id="tabAlertas"><span>⚠️ Alertas</span></button>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="content-section active" id="sectionAgenda">
+    <div class="section-header">
+      <h2 class="section-title">Blocos Disponíveis</h2>
+      <div class="count-badge" id="countAgenda">0 blocos encontrados</div>
+    </div>
+    <div class="events-list" id="listAgenda"></div>
+  </div>
+
+  <!-- MINHA ROTA -->
+  <div class="content-section" id="sectionMinhaRota">
+    <div class="section-header">
+      <h2 class="section-title">Minha Rota Personalizada</h2>
+      <div class="count-badge" id="countMinhaRota">0 blocos selecionados</div>
+    </div>
+
+    <div class="pills mb-3">
+      <div class="pill" id="pickedPill">Nenhum bloco selecionado</div>
+      <div class="pill" id="routePill">🗺️ Rota não gerada</div>
+    </div>
+
+    <div class="panel mb-3">
+      <div class="panel-title">🎯 Configurar Rota</div>
+      <div class="kicker mb-2">
+        Monte sua rota selecionando blocos na aba "Agenda". Use os filtros para encontrar os blocos mais próximos e adequados ao seu horário.
+      </div>
+      <div class="route-actions">
+        <button id="buildRouteBtn" class="btn-sm">🚀 Gerar rota no Maps</button>
+        <button id="openRouteBtn" class="secondary btn-sm">🗺️ Abrir rota</button>
+        <button id="copyRouteBtn" class="secondary btn-sm">🔗 Copiar link</button>
+        <button id="clearPickedBtn" class="secondary btn-sm">🗑️ Limpar seleção</button>
+      </div>
+    </div>
+
+    <h3 class="section-title mb-2">Blocos Selecionados</h3>
+    <div class="events-list" id="pickedList"></div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="content-section" id="sectionAlertas">
+    <div class="section-header">
+      <h2 class="section-title">Alertas ao Vivo</h2>
+      <div class="count-badge" id="countAlertas">0 blocos com alertas</div>
+    </div>
+
+    <div class="kicker mb-3">
+      📡 Receba e compartilhe atualizações em tempo real sobre mudanças de local, atrasos, lotação e outras informações importantes dos blocos.
+    </div>
+
+    <div class="events-list" id="listAlertas"></div>
+  </div>
+</main>
+
+<script>
+  // Dados completos - Carnaval Rio 2026
+  const events = [
+    // 31/01 - Pré-Carnaval
+    { title: "Bloco da Gold — Vem Com O Gigante", address: "Rua Primeiro de Março, 33 — Centro", dateLabel: "31/01 (Sábado)", dateISO: "2026-01-31", time: "07:00", tag: "pre" },
+    { title: "Desliga da Justiça", address: "Praça Tiradentes — Centro", dateLabel: "31/01 (Sábado)", dateISO: "2026-01-31", time: "08:00", tag: "pre" },
+    { title: "Spanta Neném", address: "Av. Epitácio Pessoa, 1005 — Lagoa", dateLabel: "31/01 (Sábado)", dateISO: "2026-01-31", time: "10:00", tag: "pre" },
+    { title: "Foliões do Rio", address: "Praça Jerusalém, 39 — Jardim Guanabara", dateLabel: "31/01 (Sábado)", dateISO: "2026-01-31", time: "11:00", tag: "pre" },
+    { title: "Bloco Gordelícia", address: "Rua Bernardino de Campos, 93 — Piedade", dateLabel: "31/01 (Sábado)", dateISO: "2026-01-31", time: "14:00", tag: "pre" },
+
+    // 01/02 - Pré-Carnaval
+    { title: "Seraqabre?", address: "Rua Primeiro de Março, 33 — Centro", dateLabel: "01/02 (Domingo)", dateISO: "2026-02-01", time: "07:00", tag: "pre" },
+    { title: "Bloco Maravilhosas", address: "Av. Vieira Souto, 594 — Ipanema", dateLabel: "01/02 (Domingo)", dateISO: "2026-02-01", time: "08:00", tag: "pre" },
+    { title: "Morena do Dom", address: "Rua André Cavalcanti, 44 — Centro", dateLabel: "01/02 (Domingo)", dateISO: "2026-02-01", time: "12:00", tag: "pre" },
+    { title: "Banda Cultural do Jiló", address: "Rua Pinto de Figueiredo, 26A — Tijuca", dateLabel: "01/02 (Domingo)", dateISO: "2026-02-01", time: "14:00", tag: "pre" },
+    { title: "Festival Porto Folia", address: "Praça Mauá — Centro", dateLabel: "01/02 (Domingo)", dateISO: "2026-02-01", time: "16:00", tag: "pre" },
+
+    // 07/02 - Pré-Carnaval
+    { title: "Bloco da Favorita", address: "Rua Primeiro de Março, 33 — Centro", dateLabel: "07/02 (Sábado)", dateISO: "2026-02-07", time: "07:00", tag: "pre" },
+    { title: "Céu na Terra", address: "Rua Almirante Alexandrino, 89 — Santa Teresa", dateLabel: "07/02 (Sábado)", dateISO: "2026-02-07", time: "07:00", tag: "pre" },
+    { title: "Lambabloco", address: "Largo São Francisco de Paula, 50 — Centro", dateLabel: "07/02 (Sábado)", dateISO: "2026-02-07", time: "10:00", tag: "pre" },
+    { title: "Bloco Bunda Rachada", address: "Rua Romero Zander, 358 — Ramos", dateLabel: "07/02 (Sábado)", dateISO: "2026-02-07", time: "14:00", tag: "pre" },
+    { title: "Banda Haddock Lobo", address: "Rua Haddock Lobo, 359 — Tijuca", dateLabel: "07/02 (Sábado)", dateISO: "2026-02-07", time: "16:00", tag: "pre" },
+
+    // 08/02 - Pré-Carnaval
+    { title: "Chora Me Liga", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "08/02 (Domingo)", dateISO: "2026-02-08", time: "07:00", tag: "pre" },
+    { title: "Suvaco de Cristo", address: "Rua Jardim Botânico, 594 — Jardim Botânico", dateLabel: "08/02 (Domingo)", dateISO: "2026-02-08", time: "08:00", tag: "pre" },
+    { title: "Bangalafumenga", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "08/02 (Domingo)", dateISO: "2026-02-08", time: "09:00", tag: "pre" },
+    { title: "Banda de Ipanema", address: "Rua Gomes Carneiro, 55 — Ipanema", dateLabel: "08/02 (Domingo)", dateISO: "2026-02-08", time: "15:00", tag: "pre" },
+    { title: "Unidos do Engenho de Dentro", address: "Rua Adolfo Bergamini, 370 — Engenho de Dentro", dateLabel: "08/02 (Domingo)", dateISO: "2026-02-08", time: "16:00", tag: "pre" },
+
+    // 14/02 - Carnaval Oficial
+    { title: "Cordão da Bola Preta", address: "Rua Primeiro de Março, 33 — Centro", dateLabel: "14/02 (Sábado) — Oficial", dateISO: "2026-02-14", time: "07:00", tag: "official" },
+    { title: "Multibloco", address: "Av. Henrique Valadares, 75 — Centro", dateLabel: "14/02 (Sábado) — Oficial", dateISO: "2026-02-14", time: "07:00", tag: "official" },
+    { title: "Simpatia É Quase Amor", address: "Rua Teixeira de Melo, 37 — Ipanema", dateLabel: "14/02 (Sábado) — Oficial", dateISO: "2026-02-14", time: "14:00", tag: "official" },
+    { title: "Banda de Ipanema", address: "Rua Gomes Carneiro, 55 — Ipanema", dateLabel: "14/02 (Sábado) — Oficial", dateISO: "2026-02-14", time: "15:00", tag: "official" },
+    { title: "Carioca da Gema", address: "Rua dos Arcos, 24 — Lapa", dateLabel: "14/02 (Sábado) — Oficial", dateISO: "2026-02-14", time: "15:00", tag: "official" },
+
+    // 15/02 - Carnaval Oficial
+    { title: "Sargento Pimenta (prévia)", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "15/02 (Domingo) — Oficial", dateISO: "2026-02-15", time: "08:00", tag: "official" },
+    { title: "Bangalafumenga", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "15/02 (Domingo) — Oficial", dateISO: "2026-02-15", time: "09:00", tag: "official" },
+    { title: "Empolga às 9", address: "Av. Vieira Souto, 370 — Ipanema", dateLabel: "15/02 (Domingo) — Oficial", dateISO: "2026-02-15", time: "12:00", tag: "official" },
+    { title: "Banda de Ipanema", address: "Rua Gomes Carneiro, 55 — Ipanema", dateLabel: "15/02 (Domingo) — Oficial", dateISO: "2026-02-15", time: "15:00", tag: "official" },
+    { title: "Orquestra Voadora", address: "Av. Infante Dom Henrique, 735 — Glória", dateLabel: "15/02 (Domingo) — Oficial", dateISO: "2026-02-15", time: "15:00", tag: "official" },
+
+    // 16/02 - Carnaval Oficial
+    { title: "Sargento Pimenta", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "16/02 (Segunda) — Oficial", dateISO: "2026-02-16", time: "08:00", tag: "official" },
+    { title: "Acabou Amor", address: "Rua Domingos Mondim, 41 — Tauá", dateLabel: "16/02 (Segunda) — Oficial", dateISO: "2026-02-16", time: "13:00", tag: "official" },
+    { title: "Carrossel de Emoções", address: "Av. Infante Dom Henrique, 75 — Glória", dateLabel: "16/02 (Segunda) — Oficial", dateISO: "2026-02-16", time: "14:00", tag: "official" },
+    { title: "Banda da Inválidos", address: "Rua dos Inválidos, 138 — Centro", dateLabel: "16/02 (Segunda) — Oficial", dateISO: "2026-02-16", time: "16:00", tag: "official" },
+    { title: "Tigre do Coqueiro", address: "Rua Barros de Alarcão, 283 — Pedra de Guaratiba", dateLabel: "16/02 (Segunda) — Oficial", dateISO: "2026-02-16", time: "17:00", tag: "official" },
+
+    // 17/02 - Terça de Carnaval
+    { title: "Fervo da Lud", address: "Rua Primeiro de Março, 33 — Centro", dateLabel: "17/02 (Terça) — Carnaval", dateISO: "2026-02-17", time: "07:00", tag: "official" },
+    { title: "Sereias da Guanabara", address: "Praia do Flamengo, 340 — Flamengo", dateLabel: "17/02 (Terça) — Carnaval", dateISO: "2026-02-17", time: "14:00", tag: "official" },
+    { title: "Bloco da Preta", address: "Rua Almirante Alexandrino, 660 — Santa Teresa", dateLabel: "17/02 (Terça) — Carnaval", dateISO: "2026-02-17", time: "15:00", tag: "official" },
+    { title: "Banda de Ipanema", address: "Rua Gomes Carneiro, 55 — Ipanema", dateLabel: "17/02 (Terça) — Carnaval", dateISO: "2026-02-17", time: "15:00", tag: "official" },
+    { title: "Largo do Machado", address: "Largo do Machado, 19 — Catete", dateLabel: "17/02 (Terça) — Carnaval", dateISO: "2026-02-17", time: "15:00", tag: "official" },
+  ];
+
+  const STATUS = [
+    { id: "ok", label: "Confirmado", icon: "✅" },
+    { id: "attention", label: "Atenção", icon: "⚠️" },
+    { id: "delay", label: "Atraso", icon: "⏰" },
+    { id: "crowded", label: "Lotado", icon: "👥" },
+    { id: "moved", label: "Mudou local", icon: "📍" },
+    { id: "cancelled", label: "Cancelado", icon: "❌" }
+  ];
+
+  // Elements
+  const searchEl = document.getElementById("search");
+  const dayFilterEl = document.getElementById("dayFilter");
+  const tagFilterEl = document.getElementById("tagFilter");
+  
+  const tabAgenda = document.getElementById("tabAgenda");
+  const tabMinhaRota = document.getElementById("tabMinhaRota");
+  const tabAlertas = document.getElementById("tabAlertas");
+  
+  const sectionAgenda = document.getElementById("sectionAgenda");
+  const sectionMinhaRota = document.getElementById("sectionMinhaRota");
+  const sectionAlertas = document.getElementById("sectionAlertas");
+  
+  const listAgenda = document.getElementById("listAgenda");
+  const listAlertas = document.getElementById("listAlertas");
+  const pickedList = document.getElementById("pickedList");
+  
+  const countAgenda = document.getElementById("countAgenda");
+  const countMinhaRota = document.getElementById("countMinhaRota");
+  const countAlertas = document.getElementById("countAlertas");
+  
+  const pickedPill = document.getElementById("pickedPill");
+  const routePill = document.getElementById("routePill");
+  
+  const buildRouteBtn = document.getElementById("buildRouteBtn");
+  const openRouteBtn = document.getElementById("openRouteBtn");
+  const copyRouteBtn = document.getElementById("copyRouteBtn");
+  const clearPickedBtn = document.getElementById("clearPickedBtn");
+
+  // State
+  const picked = new Set();
+  let lastRouteLink = "";
+
+  // Helper functions
+  function idFor(ev) {
+    return `${ev.dateLabel}-${ev.title}`.replace(/\s+/g, "-").toLowerCase();
+  }
+
+  function tagLabel(tag) {
+    return tag === "official" ? "Oficial" : "Pré-Carnaval";
+  }
+
+  function statusById(id) {
+    return STATUS.find(s => s.id === id);
+  }
+
+  function mapsLink(ev) {
+    return `https://maps.google.com/?q=${encodeURIComponent(ev.address)}`;
+  }
+  
+  function idFor(ev) {
+    return `${ev.dateISO}_${ev.time}_${ev.title}`.replace(/\s+/g, "_");
+  }
+
+  function loadAlerts() {
+    try {
+      return JSON.parse(localStorage.getItem("carnival-alerts") || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function saveAlerts(data) {
+    localStorage.setItem("carnival-alerts", JSON.stringify(data));
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function filteredEvents() {
+    const search = searchEl.value.toLowerCase();
+    const day = dayFilterEl.value;
+    const tag = tagFilterEl.value;
+
+    return events.filter(ev => {
+      const matchSearch = !search || 
+        ev.title.toLowerCase().includes(search) || 
+        ev.address.toLowerCase().includes(search);
+      const matchDay = !day || ev.dateLabel === day;
+      const matchTag = !tag || ev.tag === tag;
+      return matchSearch && matchDay && matchTag;
+    });
+  }
+
+  function pickedEvents() {
+    return events
+      .filter(ev => picked.has(idFor(ev)))
+      .sort((a, b) => (a.dateISO + a.time).localeCompare(b.dateISO + b.time));
+  }
+
+  function buildDayFilter() {
+    const days = [...new Set(events.map(e => e.dateLabel))];
+    days.forEach(day => {
+      const opt = document.createElement("option");
+      opt.value = day;
+      opt.textContent = day;
+      dayFilterEl.appendChild(opt);
+    });
+  }
+
+  function updatePickedPill() {
+    const count = picked.size;
+    pickedPill.textContent = count === 0 
+      ? "Nenhum bloco selecionado" 
+      : `${count} bloco${count > 1 ? 's' : ''} selecionado${count > 1 ? 's' : ''}`;
+    countMinhaRota.textContent = `${count} bloco${count > 1 ? 's' : ''} selecionado${count > 1 ? 's' : ''}`;
+  }
+
+  function buildRoute() {
+    const list = pickedEvents();
+    if (list.length === 0) {
+      alert("Selecione pelo menos 1 bloco na aba Agenda para gerar a rota.");
+      return null;
+    }
+
+    const addresses = list.map(ev => encodeURIComponent(ev.address));
+    const link = `https://www.google.com/maps/dir/${addresses.join('/')}`;
+    lastRouteLink = link;
+    routePill.textContent = `✅ Rota com ${list.length} bloco${list.length > 1 ? 's' : ''}`;
+    return link;
+  }
+
+  function setActiveTab(tab) {
+    [tabAgenda, tabMinhaRota, tabAlertas].forEach(t => t.classList.remove("active"));
+    [sectionAgenda, sectionMinhaRota, sectionAlertas].forEach(s => s.classList.remove("active"));
+    
+    tab.classList.add("active");
+    
+    if (tab === tabAgenda) {
+      sectionAgenda.classList.add("active");
+      renderAgenda();
+    } else if (tab === tabMinhaRota) {
+      sectionMinhaRota.classList.add("active");
+      renderMinhaRota();
+    } else if (tab === tabAlertas) {
+      sectionAlertas.classList.add("active");
+      renderAlertas();
+    }
+  }
+
+  function renderAgenda() {
+    const list = filteredEvents();
+    listAgenda.innerHTML = "";
+    countAgenda.textContent = `${list.length} bloco${list.length !== 1 ? 's' : ''} encontrado${list.length !== 1 ? 's' : ''}`;
+
+    if (list.length === 0) {
+      listAgenda.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🎭</div>
+          <p>Nenhum bloco encontrado com os filtros selecionados.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(ev => {
+      const id = idFor(ev);
+      const isPicked = picked.has(id);
+      
+      const card = document.createElement("div");
+      card.className = "event-card";
+      card.innerHTML = `
+        <div class="event-info">
+          <h3 class="event-title">${ev.title}</h3>
+          <div class="event-address">📍 ${ev.address}</div>
+          <div class="event-meta">
+            <span class="meta-item">🗓️ ${ev.dateLabel}</span>
+            <span class="meta-item">⏰ ${ev.time}</span>
+            <span class="meta-item">🏷️ ${tagLabel(ev.tag)}</span>
+          </div>
+        </div>
+        <div class="event-actions">
+          <button class="btn-sm ${isPicked ? 'secondary' : ''}" data-toggle="${id}">
+            ${isPicked ? '✅ Selecionado' : '➕ Adicionar'}
+          </button>
+          <a href="${mapsLink(ev)}" target="_blank" class="secondary btn-sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">
+            🗺️ Maps
+          </a>
+        </div>
+      `;
+      listAgenda.appendChild(card);
+    });
+
+    document.querySelectorAll("[data-toggle]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-toggle");
+        if (picked.has(id)) {
+          picked.delete(id);
+        } else {
+          picked.add(id);
+        }
+        updatePickedPill();
+        renderAgenda();
+        renderMinhaRota();
+      });
+    });
+  }
+
+  function renderMinhaRota() {
+    const list = pickedEvents();
+    pickedList.innerHTML = "";
+
+    if (list.length === 0) {
+      pickedList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🗺️</div>
+          <p>Nenhum bloco selecionado ainda.<br>Vá para a aba "Agenda" e adicione blocos à sua rota.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(ev => {
+      const id = idFor(ev);
+      const card = document.createElement("div");
+      card.className = "event-card";
+      card.innerHTML = `
+        <div class="event-info">
+          <h3 class="event-title">${ev.title}</h3>
+          <div class="event-address">📍 ${ev.address}</div>
+          <div class="event-meta">
+            <span class="meta-item">🗓️ ${ev.dateLabel}</span>
+            <span class="meta-item">⏰ ${ev.time}</span>
+          </div>
+        </div>
+        <div class="event-actions">
+          <a href="${mapsLink(ev)}" target="_blank" class="secondary btn-sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">
+            🗺️ Maps
+          </a>
+          <button class="secondary btn-sm" data-remove="${id}">🗑️ Remover</button>
+        </div>
+      `;
+      pickedList.appendChild(card);
+    });
+
+    document.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        picked.delete(btn.getAttribute("data-remove"));
+        updatePickedPill();
+        renderAgenda();
+        renderMinhaRota();
+      });
+    });
+  }
+
+  function renderAlertas() {
+    const alerts = loadAlerts();
+    const list = filteredEvents();
+    listAlertas.innerHTML = "";
+    
+    const withAlerts = list.filter(ev => alerts[idFor(ev)]);
+    countAlertas.textContent = `${withAlerts.length} bloco${withAlerts.length !== 1 ? 's' : ''} com alerta${withAlerts.length !== 1 ? 's' : ''}`;
+
+    if (list.length === 0) {
+      listAlertas.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <p>Nenhum bloco encontrado com os filtros selecionados.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(ev => {
+      const id = idFor(ev);
+      const alert = alerts[id];
+      const status = alert ? statusById(alert.status) : null;
+      const note = alert?.note || "";
+      const updatedAt = alert?.updatedAt 
+        ? new Date(alert.updatedAt).toLocaleString("pt-BR") 
+        : "";
+
+      const card = document.createElement("div");
+      card.className = "event-card";
+      card.innerHTML = `
+        <div class="event-info">
+          <h3 class="event-title">${ev.title}</h3>
+          <div class="event-address">📍 ${ev.address}</div>
+          <div class="event-meta">
+            <span class="meta-item">🗓️ ${ev.dateLabel}</span>
+            <span class="meta-item">⏰ ${ev.time}</span>
+            <span class="meta-item">🏷️ ${tagLabel(ev.tag)}</span>
+            ${status ? `<span class="pill ${status.id === 'ok' ? 'ok' : status.id === 'cancelled' ? 'danger' : 'warn'}">${status.icon} ${status.label}</span>` : ''}
+          </div>
+          ${note ? `<div class="kicker mt-2">📝 ${escapeHtml(note)}</div>` : ''}
+          ${updatedAt ? `<div class="text-muted mt-1" style="font-size:0.875rem;">🕒 Atualizado: ${updatedAt}</div>` : ''}
+        </div>
+        <div class="event-actions">
+          <button class="btn-sm" data-alert="${id}">⚠️ Atualizar</button>
+          <a href="${mapsLink(ev)}" target="_blank" class="secondary btn-sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">
+            🗺️ Maps
+          </a>
+          <button class="secondary btn-sm" data-share="${id}">🔗 Compartilhar</button>
+        </div>
+      `;
+      listAlertas.appendChild(card);
+    });
+
+    document.querySelectorAll("[data-alert]").forEach(btn => {
+      btn.addEventListener("click", () => openAlertModal(btn.getAttribute("data-alert")));
+    });
+
+    document.querySelectorAll("[data-share]").forEach(btn => {
+      btn.addEventListener("click", () => shareAlert(btn.getAttribute("data-share")));
+    });
+  }
+
+  function openAlertModal(eventId) {
+    const alerts = loadAlerts();
+    const current = alerts[eventId] || { status: "attention", note: "" };
+    const ev = events.find(e => idFor(e) === eventId);
+    const header = ev ? `${ev.title} — ${ev.dateLabel} ${ev.time}` : "Alerta";
+
+    const statusText = STATUS.map(s => `${s.id} = ${s.label}`).join("\n");
+    const chosen = prompt(
+      `ALERTA — ${header}\n\nEscolha o status digitando um destes ids:\n${statusText}\n\nStatus atual: ${current.status}\n\nDigite o id do novo status (ou deixe em branco para manter):`,
+      ""
+    );
+
+    let status = current.status;
+    if (chosen && STATUS.some(s => s.id === chosen.trim())) {
+      status = chosen.trim();
+    }
+
+    const note = prompt(
+      `Mensagem curta (opcional). Ex:\n"Concentração mudou pra Rua X"\n"Lotou agora, melhor chegar pelo metrô"\n"Saída pela Rua Y"\n\nMensagem atual:\n${current.note || "(vazia)"}\n\nDigite a nova mensagem (ou deixe em branco para manter):`,
+      ""
+    );
+
+    const newNote = note === null ? current.note : (note.trim() || current.note);
+
+    alerts[eventId] = { 
+      status, 
+      note: newNote || "", 
+      updatedAt: Date.now() 
+    };
+    saveAlerts(alerts);
+    renderAlertas();
+  }
+
+  async function shareAlert(eventId) {
+    const alerts = loadAlerts();
+    const alert = alerts[eventId];
+    
+    if (!alert) {
+      window.alert("Este bloco ainda não tem alerta. Clique em 'Atualizar' e registre um status.");
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("share", eventId);
+    url.searchParams.set("status", alert.status);
+    if (alert.note) url.searchParams.set("note", alert.note);
+    url.searchParams.set("t", String(alert.updatedAt || Date.now()));
+
+    const ok = await copyText(url.toString());
+    if (ok) {
+      window.alert("Link do alerta copiado ✅ (cole no WhatsApp/Instagram).");
+    } else {
+      window.alert("Não consegui copiar automaticamente. Copie o link da barra do navegador.");
+    }
+  }
+
+  function applySharedAlertFromURL() {
+    const url = new URL(window.location.href);
+    const shareId = url.searchParams.get("share");
+    const status = url.searchParams.get("status");
+    const note = url.searchParams.get("note") || "";
+    const t = url.searchParams.get("t");
+    
+    if (!shareId || !status) return;
+
+    const alerts = loadAlerts();
+    alerts[shareId] = { 
+      status, 
+      note, 
+      updatedAt: t ? Number(t) : Date.now() 
+    };
+    saveAlerts(alerts);
+
+    url.searchParams.delete("share");
+    url.searchParams.delete("status");
+    url.searchParams.delete("note");
+    url.searchParams.delete("t");
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m]));
+  }
+
+  // Event listeners
+  tabAgenda.addEventListener("click", () => setActiveTab(tabAgenda));
+  tabMinhaRota.addEventListener("click", () => setActiveTab(tabMinhaRota));
+  tabAlertas.addEventListener("click", () => setActiveTab(tabAlertas));
+
+  searchEl.addEventListener("input", () => {
+    const activeTab = document.querySelector(".tab.active");
+    setActiveTab(activeTab);
+  });
+
+  dayFilterEl.addEventListener("change", () => {
+    const activeTab = document.querySelector(".tab.active");
+    setActiveTab(activeTab);
+  });
+
+  tagFilterEl.addEventListener("change", () => {
+    const activeTab = document.querySelector(".tab.active");
+    setActiveTab(activeTab);
+  });
+
+  buildRouteBtn.addEventListener("click", () => {
+    const link = buildRoute();
+    if (link) window.open(link, "_blank", "noopener");
+  });
+
+  openRouteBtn.addEventListener("click", () => {
+    const link = lastRouteLink || buildRoute();
+    if (link) window.open(link, "_blank", "noopener");
+  });
+
+  copyRouteBtn.addEventListener("click", async () => {
+    const link = lastRouteLink || buildRoute();
+    if (!link) return;
+    
+    const ok = await copyText(link);
+    if (ok) {
+      copyRouteBtn.textContent = "✅ Link copiado";
+      setTimeout(() => {
+        copyRouteBtn.textContent = "🔗 Copiar link";
+      }, 2000);
+    } else {
+      window.alert("Não consegui copiar automaticamente. Copie o link após abrir no Maps.");
+    }
+  });
+
+  clearPickedBtn.addEventListener("click", () => {
+    picked.clear();
+    lastRouteLink = "";
+    routePill.textContent = "🗺️ Rota não gerada";
+    updatePickedPill();
+    renderAgenda();
+    renderMinhaRota();
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== searchEl) {
+      e.preventDefault();
+      searchEl.focus();
+    }
+    if (e.key === "Escape") {
+      if (document.activeElement === searchEl) searchEl.blur();
+      searchEl.value = "";
+      const activeTab = document.querySelector(".tab.active");
+      setActiveTab(activeTab);
+    }
+  });
+
+  // Initialize
+  buildDayFilter();
+  applySharedAlertFromURL();
+  updatePickedPill();
+  renderAgenda();
+</script>
+
+</body>
+</html>
